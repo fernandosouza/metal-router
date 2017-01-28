@@ -4,6 +4,7 @@ import About from './About';
 import Component from 'metal-component';
 import Home from './Home';
 import Router from '../../src/all/router.js';
+import CancellablePromise from 'metal-promise';
 import './Image.soy';
 
 // Routing from JavaScript -----------------------------------------------------
@@ -22,6 +23,16 @@ var Basic = {
 			element: '#main > div',
 			path: '/demos/basic/home-page',
 			component: Home,
+			canActivate:[
+				true,
+				() => {
+					return new CancellablePromise((resolve, reject) => {
+						window.setTimeout(() => {
+							resolve('asdfasdaf');
+						}, 1000);
+					});
+				}
+			],
 			data: {
 				title: 'Home Page'
 			}

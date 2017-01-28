@@ -6,6 +6,45 @@ import CancellablePromise from 'metal-promise';
 import { Component, ComponentRegistry } from 'metal-component';
 import IncrementalDomRenderer from 'metal-incremental-dom';
 
+class CustomRoute extends Route {
+	 constructor(path, handler, guards) {
+		 super(path, handler);
+		 this.guards = guards || [];
+	 }
+}
+
+class RouterApp extends App {
+	onBeforeNavigateDefault_(event) {
+		let parentFn = super.onBeforeNavigateDefault_.bind(this, event);
+
+		this.runCanActive(event.path).then(parentFn);
+	}
+
+	runCanActive(path) {
+		let guards = this.findRoute(path).guards;
+
+		if (!guards.canActivate.length) {
+			return CancellablePromise.resolve();
+		}
+
+		let canActives = guards.canActivate.map(item => {
+			let currentItem = core.isFunction(item) ? item() : item;
+
+			if (currentItem === true) {
+				return CancellablePromise.resolve();
+			}
+
+			if (currentItem === false) {
+				return CancellablePromise.reject('Rejectd');
+			}
+
+			return currentItem;
+		});
+
+		return CancellablePromise.all(canActives);
+	}
+}
+
 /**
  * Router class responsible for routing links to components.
  */
@@ -14,7 +53,10 @@ class Router extends Component {
 	 * @inheritDoc
 	 */
 	created() {
-		this.route = new Route(this.path, this.createScreen_.bind(this));
+		let guards = {
+			canActivate: this.canActivate
+		}
+		this.route = new CustomRoute(this.path, this.createScreen_.bind(this), guards);
 		this.route.router = this;
 		Router.router().addRoutes(this.route);
 
@@ -139,7 +181,7 @@ class Router extends Component {
 	 */
 	static router() {
 		if (!Router.routerInstance) {
-			const app = new App();
+			const app = new RouterApp();
 			app.setIgnoreQueryStringFromRoutePath(true);
 			Router.routerInstance = app;
 		}
@@ -281,6 +323,10 @@ Router.STATE = {
 	 * @type {!string|RegExp|Function}
 	 */
 	path: {
+	},
+
+	canActivate: {
+		value: []
 	}
 };
 

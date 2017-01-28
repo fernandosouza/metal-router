@@ -787,6 +787,20 @@ describe('Router', function() {
 			done();
 		});
 	});
+
+	it('should call canActivate function is it\'s present in the configuration', function(done) {
+		let canActivateGuard = sinon.stub();
+		router = new Router({
+			path: '/path',
+			component: CustomComponent,
+			canActivate: [canActivateGuard]
+		});
+
+		Router.router().navigate('/path').then(() => {
+			assert.strictEqual(1, canActivateGuard.callCount);
+			done();
+		});
+	});
 });
 
 class CustomComponent extends Component {
